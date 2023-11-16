@@ -1,0 +1,57 @@
+{#include main.html }
+{#title}Login{/title}
+{#moreScripts}
+    <script src="/webauthn/webauthn.js" type="text/javascript" charset="UTF-8"></script>
+{/moreScripts}
+
+<div class="row">
+  <div class="col-md-5">
+    {#form uri:Login.manualLogin() id="login"}
+        <fieldset>
+            <legend>Login</legend>
+            {#formElement name="userName" label="User Name" class="input-group"}
+                {#input name="userName" id="username"/}
+            {/formElement}
+            {#formElement name="password" label="Password" class="input-group"}
+                {#input name="password" type="password" id="password"/}
+            {/formElement}
+            <button type="submit" class="btn btn-primary">Login</button>
+        </fieldset>
+    {/form}
+  </div>
+</div>
+
+<script type="text/javascript">
+const webAuthn = new WebAuthn({
+  callbackPath: '/webauthn/callback',
+  registerPath: '/webauthn/register',
+  loginPath: '/webauthn/login'
+});
+
+const loginButton = document.getElementById('webauthn');
+const loginForm = document.getElementById('login');
+
+loginButton.onclick = () => {
+  requireField('username')
+    .then(name => webAuthn.loginOnly({ name: name }))
+    .then(body => {
+      document.getElementById('webAuthnId').value = body.id;
+      document.getElementById('webAuthnRawId').value = body.rawId;
+      document.getElementById('webAuthnResponseClientDataJSON').value = body.response.clientDataJSON;
+      document.getElementById('webAuthnResponseAuthenticatorData').value = body.response.authenticatorData;
+      document.getElementById('webAuthnResponseSignature').value = body.response.signature;
+      document.getElementById('webAuthnResponseUserHandle').value = body.response.userHandle;
+      document.getElementById('webAuthnType').value = body.type;
+      loginForm.submit();
+    })
+    .catch(err => {
+      if(err instanceof Error) {
+        addValidationError(document.getElementById('username'), "invalid username");
+      }
+      console.log('registration failed');
+      console.error(err);
+    });
+};
+</script>
+
+{/include}

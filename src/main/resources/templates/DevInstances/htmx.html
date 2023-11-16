@@ -1,0 +1,96 @@
+{#include main.html }
+{#title}Dev Instances{/title}
+
+{#moreScripts}
+<script src="https://unpkg.com/htmx.org@1.9.5" integrity="sha384-xcuj3WpfgjlKF+FXhSQFQ0ZNr39ln+hwjN3npfM9VBnUskLolQAcN80McRIVOPuO" crossorigin="anonymous"></script>
+{/moreScripts}
+
+
+<div class="modal fade" id="testModal" tabindex="-1" aria-hidden="true">
+  <div id="dialogTest" class="modal-dialog" hx-target="this">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="newDevInstanceModalLabel">New Staging Environment</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+    <form hx-post="{uri:DevInstances.add()}">
+    {#authenticityToken/}
+          <div class="modal-body">
+
+          <fieldset>
+              {#formElement name="name" label="Name"}
+                  {#input name="name"/}
+              {/formElement}
+              {#formElement name="description" label="Description"}
+                  {#input name="description"/}
+              {/formElement}
+              {#formElement name="databaseStorageID" label="Database"}
+                  <select class="form-select" name="databaseStorageID" id="databaseStorageID">
+
+                    {#for database in databases}
+                      <option value="{database.id}">{database.name}</option>
+                    {/for}
+                  </select>
+              {/formElement}
+              {#formElement name="githubRepo" label="Github Repo"}
+                  {#input name="githubRepo" /}
+              {/formElement}
+              {#formElement name="githubCommit" label="Github Commit"}
+                  {#input name="githubCommit"/}
+              {/formElement}
+
+              <button type="submit" class="btn btn-primary">Start</button>
+              <button type="submit" class="btn btn-primary">Cancel</button>
+          </fieldset>
+          </div>
+    </form>
+    </div>
+    </div>
+</div>
+
+  <div class="row row-cols-1 row-cols-md-2 g-4 gx-4">
+    <div id="message">
+    {#fragment id="message" rendered=false}
+    <div id="message" hx-swap-oob="true" class="alert alert-success">{message}</div>
+    {/fragment}
+    {#fragment id="error" rendered=false}
+    <div id="message" hx-swap-oob="true" class="alert alert-danger">{message}</div>
+    {/fragment}
+    </div>
+  </div>
+
+
+  <div class="row row-cols-1 row-cols-md-2 g-4 gx-4">
+    <div class="col">
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#testModal">New Instance</button>
+    </div>
+  </div>
+  <div class="row row-cols-3 row-cols-md-2 g-4 py-4">
+    {#for devInstance in devInstances}
+    {#fragment id="card"}
+      <div class="col" id="card-{devInstance.id}" >
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">{devInstance.name}</h5>
+            <p class="card-text">{devInstance.description}</p>
+            <a href="{devInstance.url}" target="_blank">{devInstance.url}</a>
+          </div>
+        <div class="card-footer">
+          <small class="text-body-secondary">{devInstance.status}</small>
+        <button type="submit" class="btn btn-danger" title="{m:todos.index.delete}"
+          	hx-post="{uri:DevInstances.stop(devInstance.id)}"
+          	hx-target="#card-{devInstance.id}"
+          	hx-swap="stop"
+          	hx-vals='{"{inject:csrf.parameterName}": "{inject:csrf.token}"}'><i class="bi-trash"></i></button>
+        </div>
+      </div>
+      </div>
+    {/fragment}
+    {/for}
+
+</div>
+
+
+
+{/include}

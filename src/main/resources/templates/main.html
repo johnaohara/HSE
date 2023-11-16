@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="{inject:i18n.get()}">
+<head>
+    <title>{#insert title /}</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        {#bundle /}
+    {#insert moreStyles /}
+    <link rel="shortcut icon" type="image/png" href="/_static/bootstrap-icons/icons/check2-square.svg"/>
+    {#insert moreScripts /}
+</head>
+<body>
+<div class="container">
+    <header class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between py-3 mb-4 border-bottom">
+        <div class="col-md-3 mb-2 mb-md-0">
+            <a href="{uri:Application.index()}" class="d-inline-flex link-body-emphasis text-decoration-none">
+                Horreum Staging Environment
+            </a>
+        </div>
+
+        <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+            <li><a class="nav-link px-32" aria-current="page" href="{uri:DevInstances.htmx()}">{m:main.devInstances}</a></li>
+            {#if inject:user}
+                {#if inject:user.isAdmin}
+                    <li class="nav-item"><a class="nav-link" aria-current="page" href="/_renarde/backoffice/index"><i class="bi bi-database"></i>{m:main.backoffice}</a></li>
+                {/if}
+            {/if}
+            <li><a class="nav-link px-2" href="{uri:Application.about()}">{m:main.about}</a></li>
+        </ul>
+
+        <div class="col-md-3 text-end">
+            {#if inject:user}
+                    {#user inject:user img = false size = 20/}
+                <a class="btn btn-primary" aria-current="page" href="{uri:RenardeSecurityController.logout()}">{m:main.logout}</a>
+            {#else}
+                <a class="btn btn-primary" aria-current="page" href="{uri:Login.login()}">{m:main.login}</a>
+            {/if}
+        </div>
+    </header>
+</div>
+
+<div class="container">
+    <div class="row">
+        <main class="col">
+            {#if flash:message}
+                <div class="alert alert-{flash:messageType ?: 'success'}">
+                {flash:message}
+                </div>
+            {/if}
+            {#insert /}
+        </main>
+    </div>
+</div>
+
+<div class="container-fluid fixed-bottom">
+    <footer>
+        <hr/>
+        © App Services Performance Team 2023</i>
+    </footer>
+</div>
+</body>
+</html>
