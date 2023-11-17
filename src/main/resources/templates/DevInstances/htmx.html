@@ -14,7 +14,7 @@
         <h1 class="modal-title fs-5" id="newDevInstanceModalLabel">New Staging Environment</h1>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-    <form hx-post="{uri:DevInstances.add()}">
+    <form hx-post="{uri:DevInstances.add()}" hx-target="new" hx-swap="beforebegin">
     {#authenticityToken/}
           <div class="modal-body">
 
@@ -40,8 +40,9 @@
                   {#input name="githubCommit"/}
               {/formElement}
 
-              <button type="submit" class="btn btn-primary">Start</button>
-              <button type="submit" class="btn btn-primary">Cancel</button>
+              <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">Start</button>
+              <button type="button" class="btn btn-primary" data-bs-dismiss="modal" aria-label="Close">Cancel</button>
+              {!<button type="button" class="btn btn-primary btn-close" data-bs-dismiss="modal" aria-label="Close">Cancel</button>!}
           </fieldset>
           </div>
     </form>
@@ -61,11 +62,6 @@
   </div>
 
 
-  <div class="row row-cols-1 row-cols-md-2 g-4 gx-4">
-    <div class="col">
-      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#testModal">New Instance</button>
-    </div>
-  </div>
   <div class="row row-cols-3 row-cols-md-2 g-4 py-4">
     {#for devInstance in devInstances}
     {#fragment id="card"}
@@ -76,18 +72,25 @@
             <p class="card-text">{devInstance.description}</p>
             <a href="{devInstance.url}" target="_blank">{devInstance.url}</a>
           </div>
-        <div class="card-footer">
-          <small class="text-body-secondary">{devInstance.status}</small>
-        <button type="submit" class="btn btn-danger" title="{m:todos.index.delete}"
-          	hx-post="{uri:DevInstances.stop(devInstance.id)}"
-          	hx-target="#card-{devInstance.id}"
-          	hx-swap="stop"
-          	hx-vals='{"{inject:csrf.parameterName}": "{inject:csrf.token}"}'><i class="bi-trash"></i></button>
+          <div class="card-footer">
+            <small class="text-body-secondary">{devInstance.status}</small>
+          <button type="submit" class="btn btn-danger" title="{m:todos.index.delete}"
+              hx-post="{uri:DevInstances.stop(devInstance.id)}"
+              hx-target="#card-{devInstance.id}"
+              hx-swap="stop"
+              hx-vals='{"{inject:csrf.parameterName}": "{inject:csrf.token}"}'><i class="bi-trash"></i></button>
+          </div>
         </div>
-      </div>
       </div>
     {/fragment}
     {/for}
+      <div class="col" id="new" >
+        <div class="card">
+          <div class="card-body text-center">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#testModal">New Instance</button>
+          </div>
+        </div>
+      </div>
 
 </div>
 
