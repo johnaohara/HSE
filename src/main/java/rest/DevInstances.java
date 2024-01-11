@@ -4,6 +4,7 @@ import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.security.Authenticated;
 import io.smallrye.common.annotation.Blocking;
+import io.vertx.core.eventbus.EventBus;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.ws.rs.FormParam;
@@ -19,6 +20,7 @@ import org.jboss.resteasy.reactive.RestPath;
 import svc.DevInstanceManager;
 import svc.InstanceManagementException;
 
+import java.util.Date;
 import java.util.List;
 
 @Blocking
@@ -28,7 +30,7 @@ public class DevInstances extends HxControllerWithUser<User> {
     private static final Logger log = Logger.getLogger(DevInstanceManager.class);
 
     @Inject
-    DevInstanceManager devInstanceManager;
+    EventBus bus;
 
     @CheckedTemplate
     static class Templates {
@@ -36,6 +38,8 @@ public class DevInstances extends HxControllerWithUser<User> {
         public static native TemplateInstance htmx$card(DevInstance devInstance);
         public static native TemplateInstance htmx$message(String message);
         public static native TemplateInstance htmx$error(String message);
+
+        public static native TemplateInstance htmx$instanceList(List<DevInstance> devInstances, List<DatabaseStorage> databases,  String message);
     }
     
     public TemplateInstance htmx() {
@@ -52,17 +56,34 @@ public class DevInstances extends HxControllerWithUser<User> {
         notFoundIfNull(devInstance);
         if(devInstance.owner != getUser())
             notFound();
-        try {
-            devInstanceManager.stopDevInstance(devInstance.id);
-        } catch (InstanceManagementException e) {
-            return Templates.htmx$error("Cannot stop dev environment: "+ e.getMessage());
-        }
+
+        bus.send("stopDevInstance", devInstance.id);
         String message = i18n.formatMessage("todos.message.deleted", devInstance.name);
         // HTMX bug: https://github.com/bigskysoftware/htmx/issues/1043
 //        	return concatTemplates(Templates.htmx$message(message), Templates.htmx$row(todo));
         	 return Templates.htmx$card(devInstance);
     }
-//
+
+    @POST
+    public TemplateInstance remove(@RestPath Long id) {
+        onlyHxRequest();
+        DevInstance devInstance = DevInstance.findById(id);
+        notFoundIfNull(devInstance);
+        if(devInstance.owner != getUser())
+            notFound();
+
+        bus.send("stopDevInstance", devInstance.id);
+
+        devInstance.delete();
+
+        String message = i18n.formatMessage("todos.message.deleted", devInstance.name);
+        // HTMX bug: https://github.com/bigskysoftware/htmx/issues/1043
+//        	return concatTemplates(Templates.htmx$message(message), Templates.htmx$row(todo));
+        List<DevInstance> devInstances = DevInstance.findAll().list(); //.findByOwner(getUser());
+        List<DatabaseStorage> dbStorage = DatabaseStorage.findAll().list(); //.findByOwner(getUser());
+
+        return Templates.htmx$instanceList(devInstances, dbStorage, null);
+    }
 //    @POST
 //    public TemplateInstance done(@RestPath Long id) {
 //        Todo todo = Todo.findById(id);
@@ -77,7 +98,7 @@ public class DevInstances extends HxControllerWithUser<User> {
 ////        	return concatTemplates(Templates.htmx$message(message), Templates.htmx$row(todo));
 //        return Templates.htmx$row(todo);
 //    }
-//
+
     @POST
     public TemplateInstance add(@FormParam("name") @NotBlank String name,
                                 @FormParam("description") @NotBlank String description,
@@ -104,9 +125,10 @@ public class DevInstances extends HxControllerWithUser<User> {
         devInstance.owner = getUser();
         devInstance.status = DevInstance.InstanceStatus.CREATED;
 
-
-
         devInstance.persist();
+
+        bus.send("newDevInstance", devInstance.id);
+
 //        try {
 //            devInstanceManager.startDevInstance(devInstance.id);
 //        } catch (InstanceManagementException e) {

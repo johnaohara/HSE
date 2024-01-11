@@ -5,7 +5,8 @@
 <script src="https://unpkg.com/htmx.org@1.9.5" integrity="sha384-xcuj3WpfgjlKF+FXhSQFQ0ZNr39ln+hwjN3npfM9VBnUskLolQAcN80McRIVOPuO" crossorigin="anonymous"></script>
 {/moreScripts}
 
-
+{#fragment id="instanceList"}
+<div id="instanceList" class="instanceList">
 <div class="modal fade" id="testModal" tabindex="-1" aria-hidden="true">
   <div id="dialogTest" class="modal-dialog" hx-target="this">
     <div class="modal-content">
@@ -14,7 +15,7 @@
         <h1 class="modal-title fs-5" id="newDevInstanceModalLabel">New Staging Environment</h1>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-    <form hx-post="{uri:DevInstances.add()}" hx-target="new" hx-swap="beforebegin">
+    <form hx-post="{uri:DevInstances.add()}" hx-target="#new" hx-swap="beforebegin">
     {#authenticityToken/}
           <div class="modal-body">
 
@@ -75,8 +76,8 @@
           <div class="card-footer">
             <small class="text-body-secondary">{devInstance.status}</small>
           <button type="submit" class="btn btn-danger" title="{m:todos.index.delete}"
-              hx-post="{uri:DevInstances.stop(devInstance.id)}"
-              hx-target="#card-{devInstance.id}"
+              hx-post="{uri:DevInstances.remove(devInstance.id)}"
+              hx-target="#instanceList"
               hx-swap="stop"
               hx-vals='{"{inject:csrf.parameterName}": "{inject:csrf.token}"}'><i class="bi-trash"></i></button>
           </div>
@@ -94,6 +95,6 @@
 
 </div>
 
-
-
+</div>
+{/fragment}
 {/include}

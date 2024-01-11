@@ -17,6 +17,7 @@
     <quarkus.platform.version>3.3.2</quarkus.platform.version>
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
     <renarde.version>3.0.4</renarde.version>
+    <qDup.version>0.8.0</qDup.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -30,6 +31,17 @@
     </dependencies>
   </dependencyManagement>
   <dependencies>
+    <dependency>
+      <groupId>io.hyperfoil.tools</groupId>
+      <artifactId>qDup</artifactId>
+      <version>${qDup.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jboss.resteasy</groupId>
+          <artifactId>resteasy-vertx</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>io.quarkiverse.web-bundler</groupId>
       <artifactId>quarkus-web-bundler</artifactId>

@@ -1,0 +1,41 @@
+scripts:
+  init-env:
+    - sh:
+        command: rm -Rf ${{TARGET_DIR}}
+        ignore-exit-code: true
+    - sh: mkdir -p ${{TARGET_DIR}}/workspace/app
+    - sh: mkdir -p ${{TARGET_DIR}}/workspace/db/backup
+    - sh: mkdir -p ${{TARGET_DIR}}/workspace/db/extracted
+    - sh: mkdir -p ${{TARGET_DIR}}/workspace/logs
+    - sh: cd ${{TARGET_DIR}}/workspace/app
+    - sh: git clone ${{GIT_REPO}}
+    - sh: cd ${{REPO_NAME}} 
+    - sh: git checkout ${{GIT_BRANCH}}
+    - sh: mvn clean package -DskipTests -DskipITs
+    - sh: cd ${{TARGET_DIR}}/workspace/db/backup
+    - sh: cp ${{DB_DIR}}/* .
+    - sh: tar axf archive-primary* -C ${{TARGET_DIR}}/workspace/db/extracted
+
+  start-application:
+    - sh: cd ${{TARGET_DIR}}/workspace/app/${{REPO_NAME}}
+    - sh: nohup mvn quarkus:dev -pl horreum-backend > ${{TARGET_DIR}}/workspace/logs/horreum.log 2> ${{TARGET_DIR}}/workspace/logs/horreum.err &
+    - sh: echo $! > ${{TARGET_DIR}}/workspace/logs/horreum.pid
+    - sh: ${{TARGET_DIR}}/workspace/logs/horreum.pid
+      then:
+        - set-state: RUN.output.pid
+
+hosts:
+  target-host : LOCAL
+roles:
+  run-hello-world:
+    hosts:
+      - target-host
+    init-scripts:
+      - init-env
+    run-scripts:
+      - start-application
+states:
+  TARGET_DIR:
+  GIT_REPO:
+  GIT_BRANCH:
+  DB_DIR: /tmp/horreum-backup
