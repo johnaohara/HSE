@@ -1,41 +1,76 @@
 scripts:
   init-env:
+    - set-state: RUN.RND ${{= Math.floor(1000000 + Math.random() * 9000000) }}
+    - set-state: RUN.TARGET_DIR ${{= "${{RUN.BASE_DIR}}/hse-" + ${{RUN.RND}} }}
+    - log: Running in - ${{TARGET_DIR}}
     - sh:
         command: rm -Rf ${{TARGET_DIR}}
         ignore-exit-code: true
     - sh: mkdir -p ${{TARGET_DIR}}/workspace/app
     - sh: mkdir -p ${{TARGET_DIR}}/workspace/db/backup
-    - sh: mkdir -p ${{TARGET_DIR}}/workspace/db/extracted
     - sh: mkdir -p ${{TARGET_DIR}}/workspace/logs
+    - sh: cd ${{TARGET_DIR}}/workspace/db/backup
+    - sh: cp ${{DB_ARCHIVE}} .
+    - sh: DB=`basename ${{DB_ARCHIVE}} .tar.zstd`
+    - sh: tar axf archive-primary* -C ${{TARGET_DIR}}/workspace/db/
+    - sh: mv ${{TARGET_DIR}}/workspace/db/$DB ${{TARGET_DIR}}/workspace/db/primary
+    - sh: chmod 700 ${{TARGET_DIR}}/workspace/db/primary
+    - sh: cd ${{TARGET_DIR}}/workspace/db/primary
+    - sh: mv `ls`/* .
+    - sh: rm -f ./backup*
+    - sh: rm -Rf ./primary*
+    - sh: rm -f ./log/postgresql.log
     - sh: cd ${{TARGET_DIR}}/workspace/app
     - sh: git clone ${{GIT_REPO}}
     - sh: cd ${{REPO_NAME}} 
-    - sh: git checkout ${{GIT_BRANCH}}
-    - sh: mvn clean package -DskipTests -DskipITs
-    - sh: cd ${{TARGET_DIR}}/workspace/db/backup
-    - sh: cp ${{DB_DIR}}/* .
-    - sh: tar axf archive-primary* -C ${{TARGET_DIR}}/workspace/db/extracted
+    # can use git instead of gh to get the PR
+    #- sh: git checkout ${{GIT_BRANCH}}
+    - sh: gh pr checkout ${{PR}}
+    - sh: mvn clean install -DskipTests -DskipITs
 
   start-application:
     - sh: cd ${{TARGET_DIR}}/workspace/app/${{REPO_NAME}}
+    #create prod env
+    - sh: |
+        cat > "horreum-backend/.env" << EOF
+          ## Add custom PROD configuration here
+          ##****
+        EOF
+    #change user to prod user
+    - sh: sed -i 's/"appuser"/"${{DB_PROD_USER}}"/g' ./horreum-backend/src/main/resources/db/changeLog.xml
+    # start on ephemeral port
+#    - sh: nohup mvn quarkus:dev -Dquarkus.http.port=0 -pl horreum-backend > ${{TARGET_DIR}}/workspace/logs/horreum.log 2> ${{TARGET_DIR}}/workspace/logs/horreum.err &
     - sh: nohup mvn quarkus:dev -pl horreum-backend > ${{TARGET_DIR}}/workspace/logs/horreum.log 2> ${{TARGET_DIR}}/workspace/logs/horreum.err &
     - sh: echo $! > ${{TARGET_DIR}}/workspace/logs/horreum.pid
-    - sh: ${{TARGET_DIR}}/workspace/logs/horreum.pid
+    - sh: cat ${{TARGET_DIR}}/workspace/logs/horreum.pid
       then:
         - set-state: RUN.output.pid
+    #TODO:
+    # 1 - wait for horreum to start
+    # 2 - update keycloak origin to localhost with ephemeral port
+#    - sh: watch ${{TARGET_DIR}}/workspace/logs/horreum.log
+#      then:
+#        - regex: started in /d*./ds. Listening on: http://localhost:(<port> 8080
 
 hosts:
-  target-host : LOCAL
+  target-host : ${{host}}
 roles:
   run-hello-world:
     hosts:
       - target-host
-    init-scripts:
+    setup-scripts:
       - init-env
     run-scripts:
       - start-application
 states:
+  host: johara@localhost
+  BASE_DIR: /working/hse
+  RND: 0
   TARGET_DIR:
-  GIT_REPO:
-  GIT_BRANCH:
-  DB_DIR: /tmp/horreum-backup
+  DB_DIR: ${{TARGET_DIR}}/hse-db-backup
+  DB_ARCHIVE: /working/databases/archive-primary-20240121060001.tar.zstd
+  GIT_REPO: https://github.com/Hyperfoil/Horreum.git
+#  GIT_BRANCH: master
+  REPO_NAME: Horreum
+  DB_PROD_USER: horreum-user
+  PR:
